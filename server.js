@@ -44,6 +44,41 @@ let Orders;
       }
     });
 
+    app.get("/search", async function (req, res) {
+      try {
+        var q = req.query.q || "";
+        q = q.trim();
+    
+        if (!q) {
+          var everyLesson = await Lessons.find({}).toArray();
+          return res.json(everyLesson);
+        }
+    
+        function cleanupRegex(str) {
+          return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+    
+        let safe = cleanupRegex(q);
+        let regex = new RegExp(safe, "i");
+    
+        let lessons = await Lessons.find({}).toArray();
+    
+        let results = lessons.filter(function (lesson) {
+          let subjectMatch  = regex.test(String(lesson.subject  || ""));
+          let locationMatch = regex.test(String(lesson.location || ""));
+          let priceMatch    = regex.test(String(lesson.price    || ""));
+          let spacesMatch   = regex.test(String(lesson.spaces   || ""));
+    
+          return subjectMatch || locationMatch || priceMatch || spacesMatch;
+        });
+    
+        res.json(results);
+      } catch (err) {
+        console.log("GET /search error:", err);
+        res.status(500).json({ error: "Search failed!!!!!!" });
+      }
+    });
+
     app.listen(PORT, () => {
       console.log("server listening on", PORT);
     });
