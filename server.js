@@ -121,6 +121,42 @@ let Orders;
       }
     });
 
+    app.put("/lessons/:id", async function (req, res) {
+      try {
+        var id = req.params.id;
+        let body = req.body;
+        let upd = body.update;
+    
+        if (!upd) {
+          return res.status(400).json({ error: 'nulll on body!! fix??' });
+        }
+    
+        var allowed = ["subject", "location", "price", "spaces", "icon"];
+        let setObj = {};
+    
+        for (let key in upd) {
+          if (allowed.indexOf(key) === -1) {
+            return res.status(400).json({ error: "field not allowed: " + key });
+          }
+          setObj[key] = upd[key];
+        }
+    
+        let result = await Lessons.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: setObj }
+        );
+    
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ error: "lesson not found!!" });
+        }
+    
+        res.json({ message: "lesson updated", modified: result.modifiedCount }); // NEW
+    
+      } catch (err) {
+        res.status(500).json({ error: "could not update lesson" });
+      }
+    }); 
+
     app.listen(PORT, () => {
       console.log("server listening on", PORT);
     });
