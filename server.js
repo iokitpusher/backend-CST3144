@@ -79,6 +79,48 @@ let Orders;
       }
     });
 
+
+    app.post("/orders", async function (req, res) {
+      try {
+        var body = req.body
+    
+        if (!validName(body.name)) {
+          return res.status(400).json({ error: "invalid name" });
+        }
+    
+        if (!validPhone(body.phone)) {
+          return res.status(400).json({ error: "invalid phone" });
+        }
+    
+        if (!Array.isArray(body.items) || body.items.length === 0) {
+          return res.status(400).json({ error: "items required" });
+        }
+    
+        var cleanItems = body.items.map(function (it) {
+          return {
+            lessonId: new ObjectId(String(it.lessonId)),
+            spaces: Number(it.spaces)
+          };
+        });
+    
+        var doc = {
+          name: body.name,
+          phone: body.phone,
+          items: cleanItems,
+          createdAt: new Date()
+        };
+    
+        let result = await Orders.insertOne(doc);
+        res.status(201).json({
+          message: "order saved! ~iokitracing",
+          orderId: result.insertedId
+        });
+    
+      } catch (err) {
+        res.status(500).json({ error: "could not save order" });
+      }
+    });
+
     app.listen(PORT, () => {
       console.log("server listening on", PORT);
     });
