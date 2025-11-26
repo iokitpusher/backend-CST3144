@@ -18,7 +18,7 @@ app.get("/", (_req, res) => {
 });
 
 const nameRegex = /^[A-Za-z\s]+$/;
-const phoneRegex = /^\d{7,15}/;
+const phoneRegex = /^\d{7,15}$/;
 const validName = (s) => nameRegex.test(s || "");
 const validPhone = (s) => phoneRegex.test(s || "");
 
