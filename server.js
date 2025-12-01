@@ -33,6 +33,11 @@ let Orders;
     Lessons = db.collection("lessons");
     Orders  = db.collection("orders");
 
+    app.use((req, _res, next) => {
+      console.log(`[iokitracing is always winning the race -- make UaFs great again! ${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+      next();
+    });
+
     // **** Routes ****
     app.get("/lessons", async (_req, res) => {
       try {
@@ -44,38 +49,37 @@ let Orders;
       }
     });
 
-    app.get("/search", async function (req, res) {
+    app.get("/search", async (req, res) => {
       try {
-        var q = req.query.q || "";
-        q = q.trim();
-    
+        const q = (req.query.q || "").trim();
         if (!q) {
-          var everyLesson = await Lessons.find({}).toArray();
-          return res.json(everyLesson);
+          const all = await Lessons.find({}).toArray();
+          return res.json(all);
         }
+  
+        const safe = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp("^" + safe, "i"); //it has to start with the word
     
-        function cleanupRegex(str) {
-          return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        }
+        
+        const results = await Lessons.aggregate([
+          { $addFields: { priceStr: { $toString: "$price" }, spacesStr: { $toString: "$spaces" } } },
+          {
+            $match: {
+              $or: [
+                { subject: { $regex: re } },
+                { location: { $regex: re } },
+                { priceStr: { $regex: re } },
+                { spacesStr: { $regex: re } },
+              ],
+            },
+          },
+          { $project: { priceStr: 0, spacesStr: 0 } },
+        ]).toArray();
     
-        let safe = cleanupRegex(q);
-        let regex = new RegExp(safe, "i");
-    
-        let lessons = await Lessons.find({}).toArray();
-    
-        let results = lessons.filter(function (lesson) {
-          let subjectMatch  = regex.test(String(lesson.subject  || ""));
-          let locationMatch = regex.test(String(lesson.location || ""));
-          let priceMatch    = regex.test(String(lesson.price    || ""));
-          let spacesMatch   = regex.test(String(lesson.spaces   || ""));
-    
-          return subjectMatch || locationMatch || priceMatch || spacesMatch;
-        });
-    
-        res.json(results);
+        return res.json(results);
       } catch (err) {
-        console.log("GET /search error:", err);
-        res.status(500).json({ error: "Search failed!!!!!!" });
+        console.error("GET /search error:", err);
+        return res.status(500).json({ error: "Search failed" });
       }
     });
 
