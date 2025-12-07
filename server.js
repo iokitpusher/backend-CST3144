@@ -13,6 +13,15 @@ app.use(express.json());
 
 app.use(cors()); // for now lets test frontend fully functional etc
 
+app.use("/images", express.static("images", { fallthrough: false }));
+
+app.use("/images", (err, _req/*yo, make it formal..*/, res, next) => {
+  if (err && err.status === 404) {
+    return res.status(404).json({ error: "Image not found? iokitracing is always found, look for that:P" });
+  }
+  next(err);
+});
+
 app.get("/", (_req, res) => {
   res.send("ok");
 });
